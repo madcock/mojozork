@@ -106,7 +106,11 @@ static uint16_t frame_buffer[FRAMEBUFFER_PIXELS];
 static struct retro_log_callback logging;
 static retro_log_printf_t log_cb;
 static float last_aspect;
+#if !defined(SF2000)
 static float last_sample_rate;
+#else
+static int last_sample_rate;
+#endif
 static char scrollback[SCROLLBACK_LINES][TERMINAL_WIDTH];
 static int32_t scrollback_read_pos = SCROLLBACK_LINES - TERMINAL_HEIGHT;
 static int32_t scrollback_count = TERMINAL_HEIGHT;
@@ -320,13 +324,22 @@ static retro_input_state_t input_state_cb;
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
     const float aspect                = ((float) FRAMEBUFFER_WIDTH) / ((float) FRAMEBUFFER_HEIGHT);
+#if !defined(SF2000)
     const float sampling_rate         = 30000.0f;
+#else
+    const int sampling_rate         = 11025;
+#endif
 
     info->geometry.base_width   = FRAMEBUFFER_WIDTH;
     info->geometry.base_height  = FRAMEBUFFER_HEIGHT;
     info->geometry.max_width    = FRAMEBUFFER_WIDTH;
     info->geometry.max_height   = FRAMEBUFFER_HEIGHT;
     info->geometry.aspect_ratio = aspect;
+
+#if defined(SF2000)
+	info->timing.fps            = 60.0;
+	info->timing.sample_rate    = sampling_rate;
+#endif
 
     last_aspect                 = aspect;
     last_sample_rate            = sampling_rate;
@@ -384,6 +397,9 @@ static void step_zmachine(void)
         const int initial_quit_state = GState->quit;
         GState->step_completed = initial_quit_state;
         while (!GState->step_completed) {
+#if defined(SF2000)
+log_cb(RETRO_LOG_DEBUG, "before runInstruction\n");
+#endif
             runInstruction();
         }
 
@@ -1119,6 +1135,9 @@ static int update_input(void)  // returns non-zero if the screen changed.
         next_inputbuf = NULL;  // don't do this again until we hit another READ opcode.
         next_inputbuflen = 0;
 
+#if defined(SF2000)
+log_cb(RETRO_LOG_DEBUG, "before step_zmachine\n");
+#endif
         step_zmachine();  // run until we get to the next input prompt.
 
         next_inputbuf_pos = 0;
@@ -1396,6 +1415,9 @@ static void restart_game(void)
         const uint8 *ptr = GState->story;
         GState->header.version = READUI8(ptr);
         GState->header.flags1 = READUI8(ptr);
+#if defined(SF2000)
+log_cb(RETRO_LOG_DEBUG, "before step_zmachine\n");
+#endif
         step_zmachine();  // run until we get to the first input prompt.
     }
 }
