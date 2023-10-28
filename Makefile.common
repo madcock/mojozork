@@ -1,0 +1,4 @@
+INCFLAGS := -I$(CORE_DIR)
+
+SOURCES_C := \
+	$(CORE_DIR)/mojozork-libretro.c
